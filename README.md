@@ -77,30 +77,60 @@ Response:
 
 ### `POST /advisor/query`
 
-Ask the AI debt advisor a question.
+Ask the AI debt advisor a question on behalf of a customer.
+
+**Request fields:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `session_id` | string | yes | Chat/conversation identifier |
+| `customer.name` | string | yes | Customer's full name |
+| `customer.monthly_income` | number | yes | Monthly income in USD |
+| `customer.debts` | array | no | List of debt objects |
+| `customer.debts[].name` | string | yes | Debt label (e.g. "credit_card") |
+| `customer.debts[].balance` | number | yes | Remaining balance in USD |
+| `customer.debts[].interest_rate` | number | yes | Annual rate as decimal (0.22 = 22%) |
+| `message` | string | yes | The customer's question |
+| `history` | array | no | Previous chat messages for context |
 
 **Basic query:**
 
 ```bash
 curl -X POST http://localhost:8000/advisor/query \
   -H "Content-Type: application/json" \
-  -d '{"query": "What is a good debt-to-income ratio?"}'
-```
-
-**Query with financial context:**
-
-```bash
-curl -X POST http://localhost:8000/advisor/query \
-  -H "Content-Type: application/json" \
   -d '{
-    "query": "Which debt should I pay off first?",
-    "context": {
+    "session_id": "chat-001",
+    "customer": {
+      "name": "John Doe",
       "monthly_income": 5000,
       "debts": [
         {"name": "credit_card", "balance": 8000, "interest_rate": 0.22},
         {"name": "car_loan", "balance": 12000, "interest_rate": 0.06}
       ]
-    }
+    },
+    "message": "Which debt should I pay off first?"
+  }'
+```
+
+**Query with chat history:**
+
+```bash
+curl -X POST http://localhost:8000/advisor/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "chat-001",
+    "customer": {
+      "name": "John Doe",
+      "monthly_income": 5000,
+      "debts": [
+        {"name": "credit_card", "balance": 8000, "interest_rate": 0.22}
+      ]
+    },
+    "message": "How long will it take to pay it off?",
+    "history": [
+      {"role": "user", "content": "Which debt should I pay off first?"},
+      {"role": "assistant", "content": "Pay off the credit card first — its 22% rate costs you the most."}
+    ]
   }'
 ```
 
@@ -108,7 +138,8 @@ Response shape:
 
 ```json
 {
-  "answer": "Based on your situation, pay off the credit card first...",
+  "session_id": "chat-001",
+  "answer": "Based on your income, pay off the credit card first...",
   "sources": []
 }
 ```
