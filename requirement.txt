@@ -1,0 +1,7 @@
+I need build the python api using fastapi, and I need to install the following dependencies: fastapi, uv 
+fast api 
+https://fastapi.tiangolo.com/
+
+so we need to build the api for using with n8n for get detail about advisor and for this project we plan to using with chatgpt api /llm api / google api.
+
+I'd like you to help me structure the basic requirements, including creating a sample API statement as a POST request, and creating a makefile to run the project and install dependencies.
