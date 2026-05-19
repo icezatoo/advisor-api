@@ -1,59 +1,60 @@
 import logging
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.services import llm
+from app.models.advisor import AdvisorMessage
+from app.services.advisor_reply import AdvisorReply
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-class Debt(BaseModel):
-    name: str
-    balance: float
-    interest_rate: float
-    type: str | None = None
+class AccInfoItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    data: dict[str, Any] = Field(alias="json")
 
 
-class Customer(BaseModel):
-    name: str
-    monthly_income: float
-    debts: list[Debt] = []
+class ConversationDesc(BaseModel):
+    consult_acc: str = ""
+    narrative: str = ""
+    tone_guidance: str = ""
 
 
-class ChatMessage(BaseModel):
+class HistoryMessage(BaseModel):
     role: str
     content: str
 
 
-class AdvisorRequest(BaseModel):
+class AdvisorQueryRequest(BaseModel):
     session_id: str
-    customer: Customer
-    message: str
-    history: list[ChatMessage] = []
+    customer_id: str
+    user_message: str
+    user_info: dict[str, Any] = {}
+    acc_info: list[AccInfoItem] = []
+    history: list[HistoryMessage] = []
+    conversation_desc: ConversationDesc = ConversationDesc()
+    timestamp: str = ""
 
 
-class AdvisorResponse(BaseModel):
+class AdvisorQueryResponse(BaseModel):
     session_id: str
-    answer: str
-    sources: list[str] = []
+    customer_id: str
+    user_message: str
+    agent_output: AdvisorMessage
+    timestamp: str
 
 
-@router.post("/query", response_model=AdvisorResponse)
-async def query_advisor(request: AdvisorRequest) -> AdvisorResponse:
+@router.post("/query", response_model=AdvisorQueryResponse)
+async def query_advisor(request: AdvisorQueryRequest) -> AdvisorQueryResponse:
     logger.info(
         "session=%s customer=%s message=%s",
         request.session_id,
-        request.customer.name,
-        request.message[:80],
+        request.customer_id,
+        request.user_message[:80],
     )
-    try:
-        answer = await llm.complete(request.customer, request.message, request.history)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.exception("Unexpected error processing query")
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
-    return AdvisorResponse(session_id=request.session_id, answer=answer)
+    reply = AdvisorReply(request.model_dump(by_alias=True))
+    result = await reply.produce_reply()
+    return AdvisorQueryResponse(**result)
