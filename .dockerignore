@@ -1,0 +1,13 @@
+.git/
+.env
+.env.local
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+tests/
+infra/
+CLAUDE.md
+README.md
+Makefile

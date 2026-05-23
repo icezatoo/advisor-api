@@ -6,6 +6,9 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     google_api_key: str = ""
+    litellm_api_base: str = ""
+    litellm_api_key: str = ""
+    litellm_model: str = "gemini-2.5-flash"
     allowed_origins: str = "http://localhost:5678,http://localhost:3000"
     log_level: str = "INFO"
 

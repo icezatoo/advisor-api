@@ -1,10 +1,11 @@
 from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
-from app.services.advisor_reply import AdvisorReply, _LOW_CONFIDENCE_MSG
+from app.services.advisor_reply import _LOW_CONFIDENCE_MSG, AdvisorReply
 
 PAYLOAD: dict[str, Any] = {
     "session_id": "test-001",
@@ -67,8 +68,9 @@ async def test_query_response_shape(client):
 
 
 async def test_stub_applies_low_confidence_gate(client):
-    # Stub _gen_reply returns empty agent_result → confidence=0 → gate overrides reply_message
-    response = await client.post("/advisor/query", json=PAYLOAD)
+    # gemini.complete returns {} → confidence=0 → gate overrides reply_message
+    with patch("app.services.gemini.complete", new=AsyncMock(return_value={})):
+        response = await client.post("/advisor/query", json=PAYLOAD)
     data = response.json()
     assert data["agent_output"]["confidence"] == 0
     assert data["agent_output"]["reply_message"] == _LOW_CONFIDENCE_MSG

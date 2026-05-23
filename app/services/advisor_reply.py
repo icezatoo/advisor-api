@@ -5,6 +5,7 @@ from typing import Any
 import pandas as pd
 
 from app.models.advisor import AdvisorMessage
+from app.services import gemini
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,12 @@ class AdvisorReply:
         self.agent_result: dict[str, Any] = {}
 
     async def _gen_reply(self) -> None:
-        self.agent_result = {}
+        acc_summary = self.df_acc.to_string(index=False) if not self.df_acc.empty else ""
+        self.agent_result = await gemini.complete(
+            conversation_data=self.conversation_data,
+            customer_info=self.customer_info,
+            acc_summary=acc_summary,
+        )
 
     async def produce_reply(self) -> dict[str, Any]:
         try:

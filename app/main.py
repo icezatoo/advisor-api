@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("DebtMind Advisor API starting up")
+    if not settings.litellm_api_base:
+        logger.warning("LITELLM_API_BASE is not set — LLM calls will fail at runtime")
     yield
     logger.info("DebtMind Advisor API shutting down")
 
